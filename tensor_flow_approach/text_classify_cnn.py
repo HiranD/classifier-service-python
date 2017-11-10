@@ -9,6 +9,8 @@ import numpy as np
 import pandas
 import tensorflow as tf
 
+import tensor_flow_approach.iterate_documents as i_docs
+
 FLAGS = None
 
 MAX_DOCUMENT_LENGTH = 100
@@ -91,12 +93,23 @@ def cnn_model(features, labels, mode):
 def main(unused_argv):
   global n_words
   # Prepare training and testing data
-  dbpedia = tf.contrib.learn.datasets.load_dataset(
-      'dbpedia', test_with_fake_data=FLAGS.test_with_fake_data)
-  x_train = pandas.DataFrame(dbpedia.train.data)[1]
-  y_train = pandas.Series(dbpedia.train.target)
-  x_test = pandas.DataFrame(dbpedia.test.data)[1]
-  y_test = pandas.Series(dbpedia.test.target)
+  train_data, train_labels = i_docs.get_documents('../resources/paravec/labeled')
+  test_data, test_labels = i_docs.get_documents('../resources/paravec/unlabeled')
+
+  labels = pandas.factorize(train_labels + test_labels)[0]
+
+  factorized_train_labels = pandas.Series(labels[:len(train_labels)])
+  factorized_test_labels = pandas.Series(labels[-len(test_labels):])
+
+  x_train = pandas.Series(train_data)
+  y_train = factorized_train_labels
+  x_test = pandas.Series(test_data)
+  y_test = factorized_test_labels
+
+  # print(x_train)
+  # print(y_train)
+  # print(x_test)
+  # print(y_test)
 
   # Process vocabulary
   vocab_processor = tf.contrib.learn.preprocessing.VocabularyProcessor(
