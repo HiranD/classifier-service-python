@@ -7,6 +7,8 @@ import pandas
 from sklearn import metrics
 import tensorflow as tf
 
+import tensor_flow_approach.utils_ as utils_
+
 MAX_DOCUMENT_LENGTH = 10
 EMBEDDING_SIZE = 50
 n_words = 0
@@ -92,13 +94,10 @@ def main(FLAGS, train_data, train_labels, test_data, test_labels, model_dir):
     # Prepare training and testing data
     labels = pandas.factorize(train_labels + test_labels)[0]
 
-    factorized_train_labels = pandas.Series(labels[:len(train_labels)])
-    factorized_test_labels = pandas.Series(labels[-len(test_labels):])
-
     x_train = pandas.Series(train_data)
-    y_train = factorized_train_labels
+    y_train = pandas.Series(labels[:len(train_labels)])
     x_test = pandas.Series(test_data)
-    y_test = factorized_test_labels
+    y_test = pandas.Series(labels[-len(test_labels):])
 
     # Process vocabulary
     vocab_processor = tf.contrib.learn.preprocessing.VocabularyProcessor(
@@ -112,6 +111,11 @@ def main(FLAGS, train_data, train_labels, test_data, test_labels, model_dir):
 
     n_words = len(vocab_processor.vocabulary_)
     print('Total words: %d' % n_words)
+
+    vocab_processor.save(model_dir+"/vocabulary_")
+    # print(x_train)
+    # print(y_train)
+    utils_.save_training_data(x_train, y_train, model_dir)
 
     # Build model
     # Switch between rnn_model and bag_of_words_model to test different models.
@@ -127,13 +131,14 @@ def main(FLAGS, train_data, train_labels, test_data, test_labels, model_dir):
     classifier = tf.estimator.Estimator(model_fn=model_fn, model_dir=model_dir)
 
     # Train.
-    train_input_fn = tf.estimator.inputs.numpy_input_fn(
-        x={WORDS_FEATURE: x_train},
-        y=y_train,
-        batch_size=len(x_train),
-        num_epochs=None,
-        shuffle=True)
-    classifier.train(input_fn=train_input_fn, steps=100)
+    if FLAGS.train:
+        train_input_fn = tf.estimator.inputs.numpy_input_fn(
+            x={WORDS_FEATURE: x_train},
+            y=y_train,
+            batch_size=len(x_train),
+            num_epochs=None,
+            shuffle=True)
+        classifier.train(input_fn=train_input_fn, steps=100)
 
     # Predict.
     test_input_fn = tf.estimator.inputs.numpy_input_fn(

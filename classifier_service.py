@@ -4,6 +4,12 @@ from flask import Flask, url_for, request
 import json
 import logging
 
+from gensim_approach import gensim_doc2vec_trainer
+
+import tensor_flow_approach.utils_ as i_docs
+import tensor_flow_approach.text_classify_rnn as classifier_rnn
+import tensor_flow_approach.text_classify_cnn as classifier_cnn
+
 application = Flask(__name__)
 
 
@@ -11,7 +17,7 @@ application = Flask(__name__)
 def tfcategorizer():
     try:
         if request.method == 'POST':
-            return name_extractor.getNames(request.form['content'])
+            return None
 
     except Exception as e:
         logging.error("error: " + str(e))
@@ -21,7 +27,7 @@ def tfcategorizer():
 def gensimcategorizer():
     try:
         if request.method == 'POST':
-            return name_extractor.getNames(request.form['content'])
+            return None
 
     except Exception as e:
         logging.error("error: " + str(e))

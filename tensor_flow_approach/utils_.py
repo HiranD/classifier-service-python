@@ -4,6 +4,8 @@ import sys
 from itertools import chain
 from os import listdir
 from os.path import isfile, join
+import numpy as np
+import pandas
 
 
 def list_directory(source):
@@ -31,3 +33,21 @@ def get_documents(relative_path):
 
     doc_data, doc_labels = read_documents(dir_path)
     return doc_data, doc_labels
+
+
+def save_training_data(data, labels, relative_path):
+    directory_path = os.path.dirname(__file__)
+    dir_path = os.path.abspath(os.path.join(directory_path, relative_path))
+
+    np.savetxt(dir_path + '/training_data_.npy', data, fmt='%d')
+    labels.to_csv(dir_path + '/training_labels_.csv')
+
+
+def load_training_data(relative_path):
+    directory_path = os.path.dirname(__file__)
+    dir_path = os.path.abspath(os.path.join(directory_path, relative_path))
+
+    data = np.loadtxt(dir_path + '/training_data_.npy', dtype=int)
+    labels = pandas.Series.from_csv(dir_path + '/training_labels_.csv')
+    return data, labels
+
