@@ -93,6 +93,7 @@ def main(FLAGS, train_data, train_labels, test_data, test_labels, model_dir):
 
     # Prepare training and testing data
     labels = pandas.factorize(train_labels + test_labels)[0]
+    labels_ = pandas.factorize(train_labels + test_labels)[1]
 
     x_train = pandas.Series(train_data)
     y_train = pandas.Series(labels[:len(train_labels)])
@@ -115,7 +116,8 @@ def main(FLAGS, train_data, train_labels, test_data, test_labels, model_dir):
     vocab_processor.save(model_dir+"/vocabulary_")
     # print(x_train)
     # print(y_train)
-    utils_.save_training_data(x_train, y_train, model_dir)
+    # utils_.save_training_data(x_train, y_train, model_dir)
+    utils_.save_factorization(labels_, model_dir)
 
     # Build model
     # Switch between rnn_model and bag_of_words_model to test different models.
@@ -150,6 +152,10 @@ def main(FLAGS, train_data, train_labels, test_data, test_labels, model_dir):
     y_predicted = np.array(list(p['class'] for p in predictions))
     y_predicted = y_predicted.reshape(np.array(y_test).shape)
 
+    labels_ = utils_.load_factorization(model_dir)
+    labels = list(labels_[x] for x in y_predicted)
+    print('Predicted categories: [' + ', '.join(labels) + "]")
+
     # Score with sklearn.
     score = metrics.accuracy_score(y_test, y_predicted)
     print('Accuracy (sklearn): {0:f}'.format(score))
@@ -157,3 +163,45 @@ def main(FLAGS, train_data, train_labels, test_data, test_labels, model_dir):
     # Score with tensorflow.
     scores = classifier.evaluate(input_fn=test_input_fn)
     print('Accuracy (tensorflow): {0:f}'.format(scores['accuracy']))
+
+
+def classify(FLAGS, test_data, model_dir):
+    global n_words
+    tf.logging.set_verbosity(tf.logging.INFO)
+
+    x_test = pandas.Series(test_data)
+
+    # Process vocabulary
+    vocab_processor = tf.contrib.learn.preprocessing.VocabularyProcessor(
+        MAX_DOCUMENT_LENGTH).restore(model_dir+"/vocabulary_")
+    n_words = len(vocab_processor.vocabulary_)
+    x_transform_test = vocab_processor.transform(x_test)
+
+    x_test = np.array(list(x_transform_test))
+
+    n_words = len(vocab_processor.vocabulary_)
+    print('Total words: %d' % n_words)
+
+    # Build model
+    # Switch between rnn_model and bag_of_words_model to test different models.
+    model_fn = rnn_model
+    if FLAGS.bow_model:
+        # Subtract 1 because VocabularyProcessor outputs a word-id matrix where word
+        # ids start from 1 and 0 means 'no word'. But
+        # categorical_column_with_identity assumes 0-based count and uses -1 for
+        # missing word.
+        x_test -= 1
+        model_fn = bag_of_words_model
+    classifier = tf.estimator.Estimator(model_fn=model_fn, model_dir=model_dir)
+
+    # Predict.
+    test_input_fn = tf.estimator.inputs.numpy_input_fn(
+        x={WORDS_FEATURE: x_test},
+        num_epochs=1,
+        shuffle=False)
+    predictions = classifier.predict(input_fn=test_input_fn)
+    y_predicted = list(p['class'] for p in predictions)
+    labels_ = utils_.load_factorization(model_dir)
+    labels = list(labels_[x] for x in y_predicted)
+
+    return labels[0]

@@ -83,7 +83,7 @@ def cnn_model(features, labels, mode):
         mode=mode, loss=loss, eval_metric_ops=eval_metric_ops)
 
 
-def main(train_data, train_labels, test_data, test_labels, model_dir):
+def main(FLAGS, train_data, train_labels, test_data, test_labels, model_dir):
     global n_words
     # Prepare training and testing data
     labels = pandas.factorize(train_labels + test_labels)[0]
@@ -108,13 +108,14 @@ def main(train_data, train_labels, test_data, test_labels, model_dir):
     classifier = tf.estimator.Estimator(model_fn=cnn_model, model_dir=model_dir)
 
     # Train.
-    train_input_fn = tf.estimator.inputs.numpy_input_fn(
-        x={WORDS_FEATURE: x_train},
-        y=y_train,
-        batch_size=len(x_train),
-        num_epochs=None,
-        shuffle=True)
-    classifier.train(input_fn=train_input_fn, steps=100)
+    if FLAGS.train:
+        train_input_fn = tf.estimator.inputs.numpy_input_fn(
+            x={WORDS_FEATURE: x_train},
+            y=y_train,
+            batch_size=len(x_train),
+            num_epochs=None,
+            shuffle=True)
+        classifier.train(input_fn=train_input_fn, steps=100)
 
     # Evaluate.
     test_input_fn = tf.estimator.inputs.numpy_input_fn(

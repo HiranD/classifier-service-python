@@ -51,3 +51,17 @@ def load_training_data(relative_path):
     labels = pandas.Series.from_csv(dir_path + '/training_labels_.csv')
     return data, labels
 
+
+def save_factorization(labels_, relative_path):
+    directory_path = os.path.dirname(__file__)
+    dir_path = os.path.abspath(os.path.join(directory_path, relative_path))
+
+    np.savetxt(dir_path + '/factorized_labels_.npy', labels_, fmt='%s')
+
+
+def load_factorization(relative_path):
+    directory_path = os.path.dirname(__file__)
+    dir_path = os.path.abspath(os.path.join(directory_path, relative_path))
+
+    labels = np.loadtxt(dir_path + '/factorized_labels_.npy', dtype=str)
+    return labels

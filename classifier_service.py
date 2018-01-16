@@ -3,6 +3,8 @@ from flask import Flask, url_for, request
 # import name_extractor
 import json
 import logging
+import argparse
+import os.path
 
 from gensim_approach import gensim_doc2vec_trainer
 
@@ -16,8 +18,14 @@ application = Flask(__name__)
 @application.route('/tfcategorizer', methods=['POST'])
 def tfcategorizer():
     try:
+        directory_path = os.path.dirname(__file__)
+        model_path = os.path.abspath(os.path.join(directory_path, 'resources/models/tf_rnn/'))
+        FLAGS = argparse.Namespace()
+        FLAGS.bow_model = False
+        prediction_data = []
         if request.method == 'POST':
-            return None
+            prediction_data.append(request.get_data(as_text=True))
+            return classifier_rnn.classify(FLAGS, prediction_data, model_path)
 
     except Exception as e:
         logging.error("error: " + str(e))
