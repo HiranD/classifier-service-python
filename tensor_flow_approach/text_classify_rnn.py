@@ -7,6 +7,10 @@ import pandas
 from sklearn import metrics
 import tensorflow as tf
 
+import logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 import tensor_flow_approach.utils_ as utils_
 
 MAX_DOCUMENT_LENGTH = 10
@@ -14,6 +18,7 @@ EMBEDDING_SIZE = 50
 n_words = 0
 MAX_LABEL = 15
 WORDS_FEATURE = 'words'  # Name of the input words feature.
+vocab_processor = None
 
 
 def estimator_spec_for_softmax_classification(
@@ -111,7 +116,7 @@ def main(FLAGS, train_data, train_labels, test_data, test_labels, model_dir):
     x_test = np.array(list(x_transform_test))
 
     n_words = len(vocab_processor.vocabulary_)
-    print('Total words: %d' % n_words)
+    logging.info('Total words: %d' % n_words)
 
     vocab_processor.save(model_dir+"/vocabulary_")
     # print(x_train)
@@ -154,33 +159,28 @@ def main(FLAGS, train_data, train_labels, test_data, test_labels, model_dir):
 
     labels_ = utils_.load_factorization(model_dir)
     labels = list(labels_[x] for x in y_predicted)
-    print('Predicted categories: [' + ', '.join(labels) + "]")
+    logging.info('Predicted categories: [' + ', '.join(labels) + "]")
 
     # Score with sklearn.
     score = metrics.accuracy_score(y_test, y_predicted)
-    print('Accuracy (sklearn): {0:f}'.format(score))
+    logging.info('Accuracy (sklearn): {0:f}'.format(score))
 
     # Score with tensorflow.
     scores = classifier.evaluate(input_fn=test_input_fn)
-    print('Accuracy (tensorflow): {0:f}'.format(scores['accuracy']))
+    logging.info('Accuracy (tensorflow): {0:f}'.format(scores['accuracy']))
 
 
-def classify(FLAGS, test_data, model_dir):
+def load_classifier(FLAGS, model_dir):
+    global vocab_processor
     global n_words
     tf.logging.set_verbosity(tf.logging.INFO)
 
-    x_test = pandas.Series(test_data)
-
     # Process vocabulary
     vocab_processor = tf.contrib.learn.preprocessing.VocabularyProcessor(
-        MAX_DOCUMENT_LENGTH).restore(model_dir+"/vocabulary_")
+        MAX_DOCUMENT_LENGTH).restore(model_dir + "/vocabulary_")
     n_words = len(vocab_processor.vocabulary_)
-    x_transform_test = vocab_processor.transform(x_test)
 
-    x_test = np.array(list(x_transform_test))
-
-    n_words = len(vocab_processor.vocabulary_)
-    print('Total words: %d' % n_words)
+    logging.info('Total words: %d' % n_words)
 
     # Build model
     # Switch between rnn_model and bag_of_words_model to test different models.
@@ -190,15 +190,32 @@ def classify(FLAGS, test_data, model_dir):
         # ids start from 1 and 0 means 'no word'. But
         # categorical_column_with_identity assumes 0-based count and uses -1 for
         # missing word.
-        x_test -= 1
         model_fn = bag_of_words_model
     classifier = tf.estimator.Estimator(model_fn=model_fn, model_dir=model_dir)
+    return classifier
+
+
+def classify(FLAGS, test_data, model_dir, classifier):
+    global vocab_processor
+    tf.logging.set_verbosity(tf.logging.INFO)
+    x_test = pandas.Series(test_data)
+    x_transform_test = vocab_processor.transform(x_test)
+
+    x_test = np.array(list(x_transform_test))
+
+    if FLAGS.bow_model:
+        # Subtract 1 because VocabularyProcessor outputs a word-id matrix where word
+        # ids start from 1 and 0 means 'no word'. But
+        # categorical_column_with_identity assumes 0-based count and uses -1 for
+        # missing word.
+        x_test -= 1
 
     # Predict.
     test_input_fn = tf.estimator.inputs.numpy_input_fn(
         x={WORDS_FEATURE: x_test},
         num_epochs=1,
         shuffle=False)
+
     predictions = classifier.predict(input_fn=test_input_fn)
     y_predicted = list(p['class'] for p in predictions)
     labels_ = utils_.load_factorization(model_dir)

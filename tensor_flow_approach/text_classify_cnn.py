@@ -5,6 +5,11 @@ from __future__ import print_function
 import numpy as np
 import pandas
 import tensorflow as tf
+import tensor_flow_approach.utils_ as utils_
+
+import logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 MAX_DOCUMENT_LENGTH = 100
 EMBEDDING_SIZE = 20
@@ -17,6 +22,7 @@ POOLING_STRIDE = 2
 n_words = 0
 MAX_LABEL = 15
 WORDS_FEATURE = 'words'  # Name of the input words feature.
+vocab_processor = None
 
 
 def cnn_model(features, labels, mode):
@@ -85,24 +91,31 @@ def cnn_model(features, labels, mode):
 
 def main(FLAGS, train_data, train_labels, test_data, test_labels, model_dir):
     global n_words
+
     # Prepare training and testing data
     labels = pandas.factorize(train_labels + test_labels)[0]
-
-    factorized_train_labels = pandas.Series(labels[:len(train_labels)])
-    factorized_test_labels = pandas.Series(labels[-len(test_labels):])
+    labels_ = pandas.factorize(train_labels + test_labels)[1]
 
     x_train = pandas.Series(train_data)
-    y_train = factorized_train_labels
+    y_train = pandas.Series(labels[:len(train_labels)])
     x_test = pandas.Series(test_data)
-    y_test = factorized_test_labels
+    y_test = pandas.Series(labels[-len(test_labels):])
 
     # Process vocabulary
     vocab_processor = tf.contrib.learn.preprocessing.VocabularyProcessor(
         MAX_DOCUMENT_LENGTH)
-    x_train = np.array(list(vocab_processor.fit_transform(x_train)))
-    x_test = np.array(list(vocab_processor.transform(x_test)))
+    x_transform_train = vocab_processor.fit_transform(x_train)
+    x_transform_test = vocab_processor.transform(x_test)
+
+    x_train = np.array(list(x_transform_train))
+    x_test = np.array(list(x_transform_test))
+
     n_words = len(vocab_processor.vocabulary_)
-    print('Total words: %d' % n_words)
+    logging.info('Total words: %d' % n_words)
+
+    vocab_processor.save(model_dir + "/vocabulary_")
+
+    utils_.save_factorization(labels_, model_dir)
 
     # Build model
     classifier = tf.estimator.Estimator(model_fn=cnn_model, model_dir=model_dir)
@@ -125,4 +138,51 @@ def main(FLAGS, train_data, train_labels, test_data, test_labels, model_dir):
         shuffle=False)
 
     scores = classifier.evaluate(input_fn=test_input_fn)
-    print('Accuracy: {0:f}'.format(scores['accuracy']))
+    logging.info('Accuracy: {0:f}'.format(scores['accuracy']))
+
+    predictions = classifier.predict(input_fn=test_input_fn)
+    y_predicted = np.array(list(p['class'] for p in predictions))
+    y_predicted = y_predicted.reshape(np.array(y_test).shape)
+
+    labels_ = utils_.load_factorization(model_dir)
+    labels = list(labels_[x] for x in y_predicted)
+    logging.info('Predicted categories: [' + ', '.join(labels) + "]")
+
+
+def load_classifier(FLAGS, model_dir):
+    global vocab_processor
+    global n_words
+    tf.logging.set_verbosity(tf.logging.INFO)
+
+    # Process vocabulary
+    vocab_processor = tf.contrib.learn.preprocessing.VocabularyProcessor(
+        MAX_DOCUMENT_LENGTH).restore(model_dir + "/vocabulary_")
+    n_words = len(vocab_processor.vocabulary_)
+
+    logging.info('Total words: %d' % n_words)
+
+    # Build model
+    classifier = tf.estimator.Estimator(model_fn=cnn_model, model_dir=model_dir)
+    return classifier
+
+
+def classify(FLAGS, test_data, model_dir, classifier):
+    global vocab_processor
+    tf.logging.set_verbosity(tf.logging.INFO)
+    x_test = pandas.Series(test_data)
+    x_transform_test = vocab_processor.transform(x_test)
+
+    x_test = np.array(list(x_transform_test))
+
+    # Evaluate.
+    test_input_fn = tf.estimator.inputs.numpy_input_fn(
+        x={WORDS_FEATURE: x_test},
+        num_epochs=1,
+        shuffle=False)
+
+    predictions = classifier.predict(input_fn=test_input_fn)
+    y_predicted = list(p['class'] for p in predictions)
+    labels_ = utils_.load_factorization(model_dir)
+    labels = list(labels_[x] for x in y_predicted)
+
+    return labels[0]

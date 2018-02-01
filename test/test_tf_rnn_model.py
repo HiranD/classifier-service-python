@@ -18,16 +18,17 @@ if __name__ == '__main__':
 
     FLAGS = argparse.Namespace()
     FLAGS.bow_model = False
-    FLAGS.train = True
+
+    # FLAGS.train = True
     # classifier_rnn.main(FLAGS, train_data, train_labels, test_data, test_labels, model_path)
-    # print(train_labels)
 
     print("------------------------------------------------------------")
 
-    # classifier_rnn.main(FLAGS, prediction_data, prediction_labels, test_data, test_labels, model_path)
-    # print(prediction_labels)
+    FLAGS.train = False
+    classifier_rnn.main(FLAGS, train_data, train_labels, prediction_data, prediction_labels, model_path)
 
-    print(classifier_rnn.classify(FLAGS, prediction_data, model_path))
+    # print(classifier_rnn.classify(FLAGS, prediction_data, model_path))
+
     print("--- %s seconds ---" % (time.time() - start_time))
     print(model_path)
     print(prediction_labels)
