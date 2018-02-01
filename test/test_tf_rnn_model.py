@@ -27,7 +27,7 @@ if __name__ == '__main__':
     FLAGS.train = False
     classifier_rnn.main(FLAGS, train_data, train_labels, prediction_data, prediction_labels, model_path)
 
-    # print(classifier_rnn.classify(FLAGS, prediction_data, model_path))
+    # print(classifier_rnn.classify(FLAGS, prediction_data, model_path, classifier_rnn.load_classifier(FLAGS, model_path)))
 
     print("--- %s seconds ---" % (time.time() - start_time))
     print(model_path)
