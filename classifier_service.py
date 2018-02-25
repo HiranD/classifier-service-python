@@ -1,4 +1,4 @@
-from flask import Flask, url_for, request
+from flask import Flask, url_for, request, jsonify
 # from logging.config import thread
 # import name_extractor
 import json
@@ -15,6 +15,9 @@ import tensor_flow_approach.utils_ as i_docs
 import tensor_flow_approach.text_classify_rnn as classifier_rnn
 import tensor_flow_approach.text_classify_cnn as classifier_cnn
 
+from gensim.models import Doc2Vec
+from gensim_approach import gensim_doc2vec_trainer
+
 application = Flask(__name__)
 directory_path = os.path.dirname(__file__)
 FLAGS = argparse.Namespace()
@@ -23,7 +26,8 @@ model_path = None
 CLASSIFIER = None
 RNN = False
 CNN = False
-previous_model = [RNN, CNN]
+doc2vec = False
+previous_model = [RNN, CNN, doc2vec]
 
 
 # @application.before_first_request
@@ -42,20 +46,29 @@ def _run_on_first_request():
     global previous_model
     global model_path
 
-    if previous_model != [RNN, CNN]:
+    if previous_model != [RNN, CNN, doc2vec]:
         if RNN:
             logging.info("loading RNN the model..")
             FLAGS.bow_model = False
             model_path = os.path.abspath(os.path.join(directory_path, 'resources/models/tf_rnn/'))
             CLASSIFIER = classifier_rnn
-            previous_model = [RNN, CNN]
+            MODEL = CLASSIFIER.load_classifier(FLAGS, model_path)
+            previous_model = [RNN, CNN, doc2vec]
         if CNN:
             logging.info("loading CNN the model..")
             model_path = os.path.abspath(os.path.join(directory_path, 'resources/models/tf_cnn/'))
             CLASSIFIER = classifier_cnn
-            previous_model = [RNN, CNN]
+            MODEL = CLASSIFIER.load_classifier(FLAGS, model_path)
+            previous_model = [RNN, CNN, doc2vec]
+        if doc2vec:
+            logging.info("loading doc2vec the model..")
+            model_path = os.path.abspath(
+                os.path.join(directory_path, 'resources/models/doc2vec-classifier-model.model'))
+            MODEL = Doc2Vec.load(model_path)
+            previous_model = [RNN, CNN, doc2vec]
 
-        MODEL = CLASSIFIER.load_classifier(FLAGS, model_path)
+
+
         logging.info("loading the model has finished..")
     return True
 
@@ -64,6 +77,9 @@ def _run_on_first_request():
 def tfcategorizer():
     global RNN
     global CNN
+    global doc2vec
+    doc2vec = False
+
     if request.headers.get('model') == "CNN":
         RNN = False
         CNN = True
@@ -76,19 +92,28 @@ def tfcategorizer():
             prediction_data = []
             if request.method == 'POST':
                 prediction_data.append(request.get_data(as_text=True))
-                return CLASSIFIER.classify(FLAGS, prediction_data, model_path, MODEL)
+                return jsonify(CLASSIFIER.classify(FLAGS, prediction_data, model_path, MODEL))
         except Exception as e:
             logging.error("error: " + str(e))
 
 
 @application.route('/gensimcategorizer', methods=['POST'])
 def gensimcategorizer():
-    try:
-        if request.method == 'POST':
-            return None
+    global MODEL
+    global RNN
+    global CNN
+    RNN = False
+    CNN = False
+    global doc2vec
+    doc2vec = True
+    if _run_on_first_request():
+        try:
+            if request.method == 'POST':
+                new_vector = MODEL.infer_vector(request.get_data(as_text=True))
+                return jsonify(MODEL.docvecs.most_similar([new_vector]))
 
-    except Exception as e:
-        logging.error("error: " + str(e))
+        except Exception as e:
+            logging.error("error: " + str(e))
 
 
 if __name__ == '__main__':

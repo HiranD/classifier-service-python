@@ -65,3 +65,12 @@ def load_factorization(relative_path):
 
     labels = np.loadtxt(dir_path + '/factorized_labels_.npy', dtype=str)
     return labels
+
+
+def load_stopwords(relative_path):
+    directory_path = os.path.dirname(__file__)
+    file_path = os.path.abspath(os.path.join(directory_path, relative_path))
+
+    stopwords = open(file_path, 'r').read().split('\n')
+    return stopwords
+

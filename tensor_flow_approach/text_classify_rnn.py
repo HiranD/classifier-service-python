@@ -221,4 +221,4 @@ def classify(FLAGS, test_data, model_dir, classifier):
     labels_ = utils_.load_factorization(model_dir)
     labels = list(labels_[x] for x in y_predicted)
 
-    return labels[0]
+    return labels
