@@ -9,9 +9,9 @@ import tensor_flow_approach.utils_ as i_docs
 import tensor_flow_approach.text_classify_cnn as classifier_cnn
 
 if __name__ == '__main__':
-    train_data, train_labels = i_docs.get_documents('../resources/paravec/labeled')
-    test_data, test_labels = i_docs.get_documents('../resources/paravec/unlabeled')
-    prediction_data, prediction_labels = i_docs.get_documents('../resources/paravec/do_prediction')
+    train_data, train_labels = i_docs.get_documents('../resources/data/labeled')
+    test_data, test_labels = i_docs.get_documents('../resources/data/unlabeled')
+    prediction_data, prediction_labels = i_docs.get_documents('../resources/data/do_prediction')
 
     start_time = time.time()
     directory_path = os.path.dirname(__file__)

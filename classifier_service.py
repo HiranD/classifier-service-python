@@ -67,14 +67,12 @@ def _run_on_first_request():
             MODEL = Doc2Vec.load(model_path)
             previous_model = [RNN, CNN, doc2vec]
 
-
-
         logging.info("loading the model has finished..")
     return True
 
 
-@application.route('/tfcategorizer', methods=['POST'])
-def tfcategorizer():
+@application.route('/tfClassifier', methods=['POST'])
+def tf_classifier():
     global RNN
     global CNN
     global doc2vec
@@ -97,8 +95,8 @@ def tfcategorizer():
             logging.error("error: " + str(e))
 
 
-@application.route('/gensimcategorizer', methods=['POST'])
-def gensimcategorizer():
+@application.route('/gensimClassifier', methods=['POST'])
+def gensim_classifier():
     global MODEL
     global RNN
     global CNN

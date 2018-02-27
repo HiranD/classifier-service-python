@@ -22,7 +22,7 @@ if __name__ == '__main__':
     model_path = os.path.abspath(os.path.join(directory_path, '../resources/models/doc2vec-classifier-model.model'))
     model = Doc2Vec.load(model_path)
 
-    test_data = os.path.abspath(os.path.join(directory_path, '../resources/paravec/do_prediction'))
+    test_data = os.path.abspath(os.path.join(directory_path, '../resources/data/do_prediction'))
     doc_data, doc_labels = gensim_doc2vec_trainer.read_documents(test_data)
     # print(doc_labels)
 
