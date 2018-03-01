@@ -40,6 +40,8 @@ previous_model = [RNN, CNN, doc2vec]
 #     logging.info("loading the model has finished..")
 
 
+# This is to reduce memory consumption and response time by loading only the relevant model at the first request.
+# If request are for the other classifier this load that relevant model to the memory.
 def _run_on_first_request():
     global MODEL
     global CLASSIFIER
@@ -71,6 +73,15 @@ def _run_on_first_request():
     return True
 
 
+#   url: post request => http://ip:port/health
+@application.route('/health', methods=['POST'])
+def classifier_health():
+    return jsonify("health is Ok..")
+
+
+# url: post request => http://ip:port/tfClassifier
+# include text content in plain text in the request body
+# include key value pair (model => CNN) in headers if we want to use CNN model
 @application.route('/tfClassifier', methods=['POST'])
 def tf_classifier():
     global RNN
@@ -95,6 +106,8 @@ def tf_classifier():
             logging.error("error: " + str(e))
 
 
+# url: post request => http://ip:port/gensimClassifier
+# include text content in plain text in the request body
 @application.route('/gensimClassifier', methods=['POST'])
 def gensim_classifier():
     global MODEL

@@ -113,8 +113,9 @@ def main(FLAGS, train_data, train_labels, test_data, test_labels, model_dir):
     n_words = len(vocab_processor.vocabulary_)
     logging.info('Total words: %d' % n_words)
 
+    # save created vocabulary to a file
     vocab_processor.save(model_dir + "/vocabulary_")
-
+    # save factorized labels in to a file
     utils_.save_factorization(labels_, model_dir)
 
     # Build model
@@ -137,9 +138,11 @@ def main(FLAGS, train_data, train_labels, test_data, test_labels, model_dir):
         num_epochs=1,
         shuffle=False)
 
+    # Evaluate.
     scores = classifier.evaluate(input_fn=test_input_fn)
     logging.info('Accuracy: {0:f}'.format(scores['accuracy']))
 
+    # do predictions
     predictions = classifier.predict(input_fn=test_input_fn)
     y_predicted = np.array(list(p['class'] for p in predictions))
     y_predicted = y_predicted.reshape(np.array(y_test).shape)
@@ -150,23 +153,27 @@ def main(FLAGS, train_data, train_labels, test_data, test_labels, model_dir):
 
 
 def load_classifier(FLAGS, model_dir):
+    # load saved model in to memory
+
     global vocab_processor
     global n_words
     tf.logging.set_verbosity(tf.logging.INFO)
 
-    # Process vocabulary
+    # load vocabulary from saved file
     vocab_processor = tf.contrib.learn.preprocessing.VocabularyProcessor(
         MAX_DOCUMENT_LENGTH).restore(model_dir + "/vocabulary_")
     n_words = len(vocab_processor.vocabulary_)
 
     logging.info('Total words: %d' % n_words)
 
-    # Build model
+    # load model
     classifier = tf.estimator.Estimator(model_fn=cnn_model, model_dir=model_dir)
     return classifier
 
 
 def classify(FLAGS, test_data, model_dir, classifier):
+    # classify given text to categories
+
     global vocab_processor
     tf.logging.set_verbosity(tf.logging.INFO)
     x_test = pandas.Series(test_data)
@@ -180,6 +187,7 @@ def classify(FLAGS, test_data, model_dir, classifier):
         num_epochs=1,
         shuffle=False)
 
+    # do predictions
     predictions = classifier.predict(input_fn=test_input_fn)
     y_predicted = list(p['class'] for p in predictions)
     labels_ = utils_.load_factorization(model_dir)

@@ -69,10 +69,10 @@ if __name__ == '__main__':
     logger.info("running %s" % ' '.join(sys.argv))
 
     directory_path = os.path.dirname(__file__)
-    dirPath = os.path.abspath(os.path.join(directory_path, '../resources/data/labeled'))
+    dataDirPath = os.path.abspath(os.path.join(directory_path, '../resources/data/labeled'))
     model_path = os.path.abspath(os.path.join(directory_path, '../resources/models'))
 
-    doc_data, doc_labels = read_documents(dirPath)
+    doc_data, doc_labels = read_documents(dataDirPath)
     print(doc_data)
     print(doc_labels)
 

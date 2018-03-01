@@ -1,0 +1,1 @@
+related article => [How to create a simple topic wise classifier service for text based contents..](https://hirandissanayake.wordpress.com/2018/02/28/how-to-create-a-simple-topic-wise-classifier-service-for-text-based-contents/)
