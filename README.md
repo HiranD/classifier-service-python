@@ -1,1 +1,1 @@
-related article => [How to create a simple topic wise classifier service for text based contents..](https://hirandissanayake.wordpress.com/2018/02/28/how-to-create-a-simple-topic-wise-classifier-service-for-text-based-contents/)
+related article => [How to create a simple topic wise classification web service for text based contents using Python](https://medium.com/@hiranhsw/how-to-create-a-simple-topic-wise-classification-web-service-for-text-based-contents-using-python-29710e72969)
